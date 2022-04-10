@@ -9,28 +9,26 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Post()
-  create(@Body() createUserDto: CreateUserDto) {
-    return this.usersService.create(createUserDto);
-  }
-
-  @Get()
-  findAll(@Res() res: Response) {
-    let result = this.usersService.findAll();
+  async create(@Body() createUserDto: CreateUserDto, @Res() res: Response) {
+    let result = await this.usersService.create(createUserDto);
     return res.status(result.status).send(result);
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: number) {
-    return this.usersService.findOne(id);
+  @Get()
+  async findAll(@Res() res: Response) {
+    let result = await this.usersService.findAll();
+    return res.status(result.status).send(result);
   }
 
   @Patch(':id')
-  update(@Param('id') id: number, @Body() updateUserDto: UpdateUserDto) {
-    return this.usersService.update(id, updateUserDto);
+  async update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto, @Res() res: Response) {
+    let result = await this.usersService.update(id, updateUserDto);
+    return res.status(result.status).send(result);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: number) {
-    return this.usersService.remove(id);
+  async remove(@Param('id') id: string, @Res() res: Response) {
+    let result = await this.usersService.remove(id);
+    return res.status(result.status).send(result);
   }
 }

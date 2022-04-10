@@ -1,107 +1,115 @@
+import { Model } from 'mongoose';
 import { HttpStatus, Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { User, UserDocument } from './schemas/user.schema';
+import { CrudService } from '../services/crud.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import globalValues from '../globalValues';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UsersService {
-  create(createUserDto: CreateUserDto) {
-    try {
-      createUserDto.id = ++globalValues.lastId;
-      globalValues.users.push(createUserDto)
-      return globalValues.response(
-        true,
-        'user added successfully!',
-        {},
-        '',
-        HttpStatus.OK);
-    } catch (e) {
-      return globalValues.response(
-        false,
-        e.message,
-        {},
-        e.stack,
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
+  constructor(
+    private crudService: CrudService,
+    @InjectModel(User.name) private userModel: Model<UserDocument>,
+  ) {
   }
 
-  findAll() {
+  public async create(createUserDto: CreateUserDto) {
     try {
+      createUserDto.username = createUserDto.username.toLowerCase();
+      const duplicatedUsername = await this.findAll({ username: createUserDto.username });
+      if (duplicatedUsername.result.length > 0) {
         return globalValues.response(
-          true,
-          'users!',
-          globalValues.users,
-          '',
+          '/users',
+          false,
+          { error: 'username not available!' },
           HttpStatus.OK);
+      }
+
+      const saltOrRounds = 10;
+      createUserDto.password = await bcrypt.hash(createUserDto.password, saltOrRounds);
+      await this.crudService.create(
+        globalValues.db.collections.users.name,
+        createUserDto,
+      );
+      return globalValues.response(
+        '/users',
+        true,
+        {},
+        HttpStatus.OK);
     } catch (e) {
       return globalValues.response(
+        '/users',
         false,
-        e.message,
-        {},
-        e.stack,
+        { error: e.message },
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
 
-  findOne(id: number) {
+  public async findAll(query = {}) {
     try {
+      const users = await this.crudService.findAll(
+        globalValues.db.collections.users.name,
+        query,
+      );
       return globalValues.response(
+        '/users',
         true,
-        'users!',
-        globalValues.users.find(elm => elm.id === id),
-        '',
+        users,
         HttpStatus.OK);
     } catch (e) {
       return globalValues.response(
+        '/users',
         false,
-        e.message,
-        {},
-        e.stack,
+        { error: e.message },
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
 
-  update(id: number, updateUserDto: UpdateUserDto) {
+  public async update(id: string, updateUserDto: UpdateUserDto) {
     try {
-      let index = globalValues.users.findIndex(elm => elm.id === id);
-      globalValues.users[index].fullname = updateUserDto.fullname;
-      globalValues.users[index].password = updateUserDto.password;
+      const saltOrRounds = 10;
+      updateUserDto.password = await bcrypt.hash(updateUserDto.password, saltOrRounds);
+      let result = await this.crudService.updateOne(
+        globalValues.db.collections.users.name,
+        { _id: id },
+        updateUserDto,
+      );
       return globalValues.response(
-        true,
-        'user updated successfully!',
-        {},
-        '',
+        '/users',
+        Boolean(result.matchedCount),
+        result,
         HttpStatus.OK);
     } catch (e) {
       return globalValues.response(
+        '/users',
         false,
-        e.message,
-        {},
-        e.stack,
+        { error: e.message },
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
 
-  remove(id: number) {
+  public async remove(id: string) {
     try {
-      let index = globalValues.users.findIndex(elm => elm.id === id);
-      globalValues.users.splice(index, 1);
+      let result = await this.crudService.findOneAndDelete(
+        globalValues.db.collections.users.name,
+        { _id: id },
+      );
       return globalValues.response(
+        '/users',
         true,
-        'user removed successfully!',
-        {},
-        '',
+        result,
         HttpStatus.OK);
     } catch (e) {
       return globalValues.response(
+        '/users',
         false,
-        e.message,
-        {},
-        e.stack,
+        { error: e.message },
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

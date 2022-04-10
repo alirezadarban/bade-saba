@@ -1,21 +1,23 @@
 const globalValues = {
+    db: {
+      address: 'mongodb://localhost:27017/test',
+      collections: {
+        users: { name: 'USERS' },
+      },
+    },
   response: (
+    path: string,
     success: boolean = true,
-    message: string = '',
-    data: any = {},
-    stack: any = {},
+    result: any = {},
     status: number,
   ) => {
     return {
+      path,
       success,
-      message,
-      data,
-      stack,
+      result,
       status,
     };
-  },
-  users: [],
-  lastId: 0
+  }
 };
 
 export default globalValues;
