@@ -10,8 +10,10 @@ export class AuthenticationController {
   @Post()
   async findOne(@Body('username') username: string,
                 @Body('password') password: string,
+                @Body('dateTime') dateTime: string,
                 @Res() res: Response) {
+    console.log("dateTime",dateTime)
     let result = await this.authenticationService.findOne(username.toLowerCase(), password);
-    return res.status(result.status).send(result);
+    return res.status(result.status).send({...result, dateTime});
   }
 }
